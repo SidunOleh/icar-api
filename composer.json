@@ -1,0 +1,11 @@
+{
+    "require": {
+        "guzzlehttp/guzzle": "^7.8",
+        "wa72/simplelogger": "^1.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "IcarAPI\\": "src/"
+        }
+    }
+}
