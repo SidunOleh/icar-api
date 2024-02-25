@@ -134,7 +134,7 @@ register_deactivation_hook(__FILE__, 'unscheduleDeleteLogsEven');
 add_action('delete_logs', function () {
     $files = array_filter(
         scandir(ICAR_API_ROOT . '/logs/imports'), 
-        fn($file) => ! in_array($file, ['.', '..',])
+        fn($file) => ! in_array($file, ['.', '..', '.htaccess',])
     );
     foreach ($files as $file) {
         $time = strtotime(basename($file, '.log'));
