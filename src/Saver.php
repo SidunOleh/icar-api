@@ -123,15 +123,15 @@ class Saver
             $catIds['global_category'] = $this->insertCategory($globalCategory);
         }
 
-        if ($category and $globalCategory) {
+        if ($category and $catIds['global_category']) {
             $catIds['category'] = $this->insertCategory($category, $catIds['global_category']);
         }
         
-        if ($subcategory and $category) {
+        if ($subcategory and $catIds['category']) {
             $catIds['subcategory'] = $this->insertCategory($subcategory, $catIds['category']);
         }
 
-        return $catIds;
+        return array_filter($catIds, fn($catId) => $catId);
     }
 
     private function insertCategory(string $name, int $parentId = 0): int|false
