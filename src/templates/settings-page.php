@@ -94,19 +94,8 @@
         }
 
         fetch(this.getAttribute('href'))
-            .then(async res => {
-                if (! res.ok) {
-                    throw new Error(res.statusText)
-                }
-
-                const data = await res.json()
-                
-                if (data.success) {
-                    alert('Import successfully finished.')
-                } else {
-                    throw new Error('Import error.')
-                }
-            }).catch(err => alert(err))
+        
+        setTimeout(() => alert('Import is running.'), 1000)
     })
 </script>
 

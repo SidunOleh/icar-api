@@ -106,13 +106,7 @@ add_action('import_products', new Task);
  */
 function forceProductsImport() {
     ignore_user_abort(true);
-    try {
-        (new Task)();
-
-        wp_send_json_success();
-    } catch (Exception $e) {
-        wp_send_json_error();
-    }
+    (new Task)();
     wp_die();
 }
 
