@@ -71,14 +71,19 @@
             method: 'POST',
             body: data,
         }).then(async res => {
+            if (res.status != 200) {
+                throw new Error()
+            }
+
             const data = await res.json()
+            
             if (data.success) {
                 alert('Successfully saved.')
             } else {
                 alert('Error. Try again.')
             }
         }).catch(err => {
-            alert('Error. Try again.')
+            alert(err ?? 'Error. Try again.')
         })
     })
 
@@ -90,14 +95,19 @@
 
         fetch('/wp-admin/admin-ajax.php?action=force_products_import')
             .then(async res => {
+                if (res.status != 200) {
+                    throw new Error()
+                }
+
                 const data = await res.json()
+
                 if (data.success) {
                     alert('Import is running.')
                 } else {
                     alert('Can\'t run import. Try later.')
                 }
             }).catch(err => {
-                alert('Error. Try again.')
+                alert(err ?? 'Error. Try again.')
             })
     })
 </script>

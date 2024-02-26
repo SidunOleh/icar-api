@@ -46,7 +46,7 @@ class Saver
         ]);
 
         if (! $productId) {
-            return new WP_Error(0, 'Saving error ' . $dto->sku());
+            return new WP_Error(1, 'Saving error ' . $dto->sku());
         }
 
         $tagIds = [];
