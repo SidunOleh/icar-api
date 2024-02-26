@@ -7,7 +7,6 @@
  */
 
 use IcarAPI\Task;
-use Illuminate\Support\Sleep;
 
 defined('ABSPATH') or die;
 
