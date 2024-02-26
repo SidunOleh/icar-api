@@ -105,9 +105,13 @@ add_action('import_products', new Task);
  * Force products import
  */
 function forceProductsImport() {
-    do_action('import_products');
+    try {
+        (new Task)();
 
-    wp_send_json_success();
+        wp_send_json_success();
+    } catch (Exception $e) {
+        wp_send_json_error();
+    }
     wp_die();
 }
 

@@ -50,7 +50,7 @@
     </p>
 
     <p class="links">
-        <a class="link" id="force">
+        <a href="<?php echo admin_url('admin-ajax.php?action=force_products_import') ?>" class="link" id="force">
             <?php _e('Force products import') ?>
         </a>
 
@@ -71,8 +71,8 @@
             method: 'POST',
             body: data,
         }).then(async res => {
-            if (res.status != 200) {
-                throw new Error()
+            if (! res.ok) {
+                throw new Error(res.statusText)
             }
 
             const data = await res.json()
@@ -80,35 +80,33 @@
             if (data.success) {
                 alert('Successfully saved.')
             } else {
-                alert('Error. Try again.')
+                throw new Error()
             }
-        }).catch(err => {
-            alert(err ?? 'Error. Try again.')
-        })
+        }).catch(err => alert(err))
     })
 
     const forceLink = document.querySelector('#force')
-    forceLink.addEventListener('click', function () {
+    forceLink.addEventListener('click', function (e) {
+        e.preventDefault()
+
         if (! confirm('Are you sure want to force products import?')) {
             return
         }
 
-        fetch('/wp-admin/admin-ajax.php?action=force_products_import')
+        fetch(this.getAttribute('href'))
             .then(async res => {
-                if (res.status != 200) {
-                    throw new Error()
+                if (! res.ok) {
+                    throw new Error(res.statusText)
                 }
 
                 const data = await res.json()
-
+                
                 if (data.success) {
-                    alert('Import is running.')
+                    alert('Import successfully finished.')
                 } else {
-                    alert('Can\'t run import. Try later.')
+                    throw new Error('Import error.')
                 }
-            }).catch(err => {
-                alert(err ?? 'Error. Try again.')
-            })
+            }).catch(err => alert(err))
     })
 </script>
 
