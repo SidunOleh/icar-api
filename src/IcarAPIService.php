@@ -43,7 +43,7 @@ class IcarAPIService
                     $response->getBody()->getContents()
                 );
                 if ($product instanceof WP_Error) {
-                    $this->logger->error($product->get_error_message());
+                    $this->logger->error($product->get_error_message() . " {$sku}");
                 } else {
                     $products[] = $product;
                     $this->logger->info("Downloaded {$sku}");

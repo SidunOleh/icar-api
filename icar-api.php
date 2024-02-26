@@ -117,7 +117,7 @@ add_action('wp_ajax_force_products_import', 'forceProductsImport');
 /**
  * Delete logs
  */
-add_action('delete_logs', function () {
+function deleteLogs() {
     $files = scandir(ICAR_API_ROOT . '/logs/imports');
     $files = array_filter($files, function ($file) {
         return ! in_array($file, ['.', '..', '.htaccess',]);
@@ -128,4 +128,6 @@ add_action('delete_logs', function () {
             unlink(ICAR_API_ROOT . '/logs/imports/' . $file);
         }
     }
-});
+}
+
+add_action('delete_logs', 'deleteLogs');

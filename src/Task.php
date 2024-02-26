@@ -47,6 +47,7 @@ class Task
             'CPCR-MR082GC', 
             'USAGED-44V22K', 
             'MDS-B-SPA-110',
+            'MDS-B-SPA-110ss',
         ];
         
         $products = (new IcarAPIService(
