@@ -105,6 +105,7 @@ add_action('import_products', new Task);
  * Force products import
  */
 function forceProductsImport() {
+    ignore_user_abort(true);
     try {
         (new Task)();
 
