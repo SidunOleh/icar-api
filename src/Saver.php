@@ -2,8 +2,6 @@
 
 namespace IcarAPI;
 
-use Exception;
-use Google\Service\AdExchangeBuyerII\Product;
 use WC_Product;
 use Psr\Log\LoggerInterface;
 use WP_Error;
