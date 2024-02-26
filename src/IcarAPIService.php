@@ -9,6 +9,7 @@ use Psr\Log\LoggerInterface;
 use GuzzleHttp\Pool;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
+use WP_Error;
 
 defined('ABSPATH') or die;
 
@@ -41,13 +42,11 @@ class IcarAPIService
                 $product = $this->parseProductInfoResponse(
                     $response->getBody()->getContents()
                 );
-                if (! $product or $product['Error']['Code']) {
-                    $this->logger->error($product['Error']['Name'] ?? '');
-                } elseif(! $product['IsFound']) {
-                    $this->logger->error("Not Found SKU: {$sku}");
+                if ($product instanceof WP_Error) {
+                    $this->logger->error($product->get_error_message());
                 } else {
                     $products[] = $product;
-                    $this->logger->info("Downloaded SKU: {$sku}");
+                    $this->logger->info("Downloaded {$sku}");
                 }
             },
             'rejected' => function(Exception $e, string $sku) {
@@ -89,16 +88,43 @@ class IcarAPIService
         return $body;
     }
 
-    private function parseProductInfoResponse(string $xml): array
+    private function parseProductInfoResponse(string $xml): ProductDTO|WP_Error
     {
         $xml = simplexml_load_string($xml);
 
-        $productInfo = $xml->children('soap', true)
-            ->Body
-            ->children('', true)
+        $info = $xml->children('soap', true)
+            ->Body->children('', true)
             ->getProductInfoResponse
             ->getProductInfoResult;
+        $info = json_decode(json_encode((array) $info), true);
 
-        return json_decode(json_encode((array) $productInfo), true);
+        if ($info['Error']['Code']) {
+            return new WP_Error($info['Error']['Code'], $info['Error']['Name']);
+        }
+
+        if (! $info['IsFound']) {
+            return new WP_Error(404, 'Not Found');
+        }
+
+        $sku = $info['Product'] ?: '';
+        $description = $info['Description'] ?: '';
+        $manufacturer = $info['Manufacturer']['Name'] ?: '';
+        $globalCategory = $info['GlobalCategory']['Name'] ?: '';
+        $category = $info['Category']['Name'] ?: '';
+        $subcategory = $info['SubCategory']['Name'] ?: '';
+        $prices = [];
+        foreach ($info['Price'] as $name => $value) {
+            $prices[$name] = $value ?: '';
+        }
+
+        return new ProductDTO(
+            $sku, 
+            $description, 
+            $manufacturer, 
+            $globalCategory, 
+            $category, 
+            $subcategory, 
+            $prices
+        );
     }
 }

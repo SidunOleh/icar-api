@@ -37,8 +37,16 @@ class Task
         $credentials['login'] = $settings['login'] ?? '';
         $credentials['password'] = $settings['password'] ?? '';
         $skus = [
-            'USAMED-20BA2T', 'D2L055FT51A0S', 'M523CXR', 'MPF1136C', 'DR2-03BCP', 'A860-0326-T102', 'MSM4A23R',
-            'CPCR-MR082GC', 'USAGED-44V22K', 'MDS-B-SPA-110',
+            'USAMED-20BA2T', 
+            'D2L055FT51A0S', 
+            'M523CXR', 
+            'MPF1136C', 
+            'DR2-03BCP', 
+            'A860-0326-T102', 
+            'MSM4A23R',
+            'CPCR-MR082GC', 
+            'USAGED-44V22K', 
+            'MDS-B-SPA-110',
         ];
         
         $products = (new IcarAPIService(
