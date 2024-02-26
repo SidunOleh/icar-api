@@ -7,6 +7,7 @@
  */
 
 use IcarAPI\Task;
+use Illuminate\Support\Sleep;
 
 defined('ABSPATH') or die;
 
@@ -106,7 +107,15 @@ add_action('import_products', new Task);
  */
 function forceProductsImport() {
     ignore_user_abort(true);
+    
+    ob_start();
+    header('Connection: close');
+    ob_end_flush();
+    ob_flush();
+    flush();
+
     (new Task)();
+    
     wp_die();
 }
 

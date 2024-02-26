@@ -94,8 +94,8 @@
         }
 
         fetch(this.getAttribute('href'))
-        
-        setTimeout(() => alert('Import is running.'), 1000)
+            .then(res => alert('Import is running.'))
+            .catch(err => alert(err))
     })
 </script>
 
