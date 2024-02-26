@@ -89,7 +89,7 @@
     forceLink.addEventListener('click', function (e) {
         e.preventDefault()
 
-        if (! confirm('Are you sure want to force products import?')) {
+        if (! confirm('ARE YOU SURE YOU WANT TO FORCE PRODUCTS IMPORT?')) {
             return
         }
 
