@@ -105,10 +105,9 @@ add_action('import_products', new Task);
  * Force products import
  */
 function forceProductsImport() {
-    wp_schedule_single_event(time(), 'import_products');
-    $result = spawn_cron();
+    do_action('import_products');
 
-    wp_send_json(['success' => $result,]);
+    wp_send_json_success();
     wp_die();
 }
 
