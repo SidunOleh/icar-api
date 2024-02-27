@@ -16,6 +16,7 @@ class Task
     public function __invoke()
     {
         set_time_limit(0);
+        ini_set('memory_limit', -1);
 
         $handlers = HandlerStack::create();
         $handlers->push(Middleware::retry(function($retries, $request, $response = null) {
