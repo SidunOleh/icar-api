@@ -99,7 +99,7 @@ add_action('wp_ajax_icar_api_update_settings', 'updateSettings');
 /**
  * Import products
  */
-add_action('import_products', new Task);
+add_action('import_products', fn() => (new Task)());
 
 /**
  * Force products import
