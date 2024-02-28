@@ -65,11 +65,19 @@
             value="<?php _e('Save Changes') ?>">
     </p>
 
-    <p class="links">
+    <p class="next">
         <a href="<?php echo admin_url('admin-ajax.php?action=force_products_import') ?>" class="link" id="force">
             <?php _e('Force products import') ?>
         </a>
+        <span>
+            <?php _e('Next import: ') ?>
+        </span>
+        <span>
+            <?php echo date( 'Y/d/m H:i:s', wp_next_scheduled('import_products') ) ?>
+        </span>
+    </p>
 
+    <p class="logs">
         <a href="/wp-content/plugins/icar-api/logs/imports?C=M;O=D" class="link" target="_blank">
             <?php _e('Logs') ?>
         </a>

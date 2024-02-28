@@ -68,6 +68,8 @@ class Saver
     {
         global $wpdb;
 
+        $name = $wpdb->_real_escape($name);
+
         $tagId = $wpdb->get_var("SELECT `terms`.`term_id`
             FROM `{$wpdb->prefix}terms` AS `terms`
             INNER JOIN `{$wpdb->prefix}term_taxonomy` AS `taxs`
@@ -115,6 +117,8 @@ class Saver
     private function insertCategory(string $name, int $parentId = 0): int|false
     {
         global $wpdb;
+
+        $name = $wpdb->_real_escape($name);
 
         $catId = $wpdb->get_var("SELECT `terms`.`term_id`
             FROM `{$wpdb->prefix}terms` AS `terms`
