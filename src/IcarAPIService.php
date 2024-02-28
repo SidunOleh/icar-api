@@ -5,11 +5,8 @@ namespace IcarAPI;
 use Exception;
 use Generator;
 use GuzzleHttp\Client;
-use Psr\Log\LoggerInterface;
-use GuzzleHttp\Pool;
-use GuzzleHttp\Psr7\Request;
-use GuzzleHttp\Psr7\Response;
-use WP_Error;
+use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Middleware;
 
 defined('ABSPATH') or die;
 
@@ -19,103 +16,128 @@ class IcarAPIService
 
     private array $credentials;
 
-    private LoggerInterface $logger;
-
     public function __construct(
         Client $client,
-        array $credentials,
-        LoggerInterface $logger,
+        array $credentials    
     )
     {
         $this->client = $client;
         $this->credentials = $credentials;
-        $this->logger = $logger;
     }
 
-    public function getProducts(array $skus): array
+    public function getProducts(int $pageSize = 1000): Generator 
     {        
-        $products = [];
+        $pageSize = $pageSize < 1 ? 1 : $pageSize;
+        $page = 1;
+        $iteratorId = '';
+        while (true) {
+            if ($page == 1) {
+                $result = $this->fullListInit($pageSize);
+            } else {
+                $result = $this->fullListNextPage($iteratorId);
+            }
 
-        $pool = new Pool($this->client, $this->productInfoRequests($skus), [
-            'concurrency' => 10,
-            'fulfilled' => function(Response $response, string $sku) use(&$products) {
-                $product = $this->parseProductInfoResponse(
-                    $response->getBody()->getContents()
-                );
-                if ($product instanceof WP_Error) {
-                    $this->logger->error($product->get_error_message() . " {$sku}");
-                } else {
-                    $products[] = $product;
-                    $this->logger->info("Downloaded {$sku}");
+            if ($result['Error']['Code']) {
+                throw new Exception($result['Error']['Name']);
+            }
+
+            $iteratorId = $result['IteratorID'];
+
+            if ($pageSize == 1) {
+                yield $this->productDTO($result['Products']['ProductInfo']);
+            } else {
+                foreach ($result['Products']['ProductInfo'] as $product) {
+                    yield $this->productDTO($product);
                 }
-            },
-            'rejected' => function(Exception $e, string $sku) {
-                $this->logger->error($e->getMessage());
-            },
-        ]);
+            }
 
-        ($pool->promise())->wait();
+            if ($result['QtyLeave'] == 0) {
+                break;
+            }
 
-        return $products;
-    }
-
-    private function productInfoRequests(array $skus): Generator
-    {
-        foreach ($skus as $sku) {
-            $uri = 'http://test.icarteam.com/IcarAPI/icarapi.asmx';
-            $headers = [
-                'Content-Type' => 'text/xml',
-            ];
-            $body = $this->productInfoRequestBody($sku);
-
-            yield $sku => new Request('POST', $uri, $headers, $body);
+            $page++;
         }
     }
 
-    private function productInfoRequestBody(string $sku): string
+    private function fullListInit(int $pageSize): array
     {
         $body = '<?xml version="1.0" encoding="utf-8"?>';
         $body .= '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">';
         $body .= '<soap:Body>';
-        $body .= '<getProductInfo xmlns="http://icarapi.com/">';
+        $body .= '<FullListInit xmlns="http://icarapi.com/">';
         $body .= "<login>{$this->credentials['login']}</login>";
         $body .= "<password>{$this->credentials['password']}</password>";
-        $body .= "<product>{$sku}</product>";
-        $body .= '</getProductInfo>';
+        $body .= "<productsOnPage>{$pageSize}</productsOnPage>";
+        $body .= '</FullListInit>';
         $body .= '</soap:Body>';
         $body .= '</soap:Envelope>';
 
-        return $body;
+        $headers = [
+            'Authorization' => "Bearer {$this->credentials['secret']}",
+            'Content-Type' => 'text/xml',
+        ];
+
+        $response = $this->client->post('http://test.icarteam.com/IcarAPI/icarapi.asmx', [
+            'headers' => $headers,
+            'body' => $body,
+        ]);
+
+        $xmlContent = simplexml_load_string($response->getBody()->getContents());
+        $result = $xmlContent->children('soap', true)
+            ->Body->children('', true)
+            ->FullListInitResponse
+            ->FullListInitResult;
+        $result = json_decode(json_encode((array) $result), true);
+
+        return $result;
     }
 
-    private function parseProductInfoResponse(string $xml): ProductDTO|WP_Error
+    private function fullListNextPage(string $iteratorId): array
     {
-        $xml = simplexml_load_string($xml);
+        $body = '<?xml version="1.0" encoding="utf-8"?>';
+        $body .= '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">';
+        $body .= '<soap:Body>';
+        $body .= '<FullListNextPage xmlns="http://icarapi.com/">';
+        $body .= "<login>{$this->credentials['login']}</login>";
+        $body .= "<password>{$this->credentials['password']}</password>";
+        $body .= "<iteratorID>{$iteratorId}</iteratorID>";
+        $body .= '</FullListNextPage>';
+        $body .= '</soap:Body>';
+        $body .= '</soap:Envelope>';
 
-        $info = $xml->children('soap', true)
+        $headers = [
+            'Authorization' => "Bearer {$this->credentials['secret']}",
+            'Content-Type' => 'text/xml',
+        ];
+
+        $response = $this->client->post('http://test.icarteam.com/IcarAPI/icarapi.asmx', [
+            'headers' => $headers,
+            'body' => $body,
+        ]);
+
+        $xmlContent = simplexml_load_string($response->getBody()->getContents());
+        $result = $xmlContent->children('soap', true)
             ->Body->children('', true)
-            ->getProductInfoResponse
-            ->getProductInfoResult;
-        $info = json_decode(json_encode((array) $info), true);
+            ->FullListNextPageResponse
+            ->FullListNextPageResult;
+        $result = json_decode(json_encode((array) $result), true);
 
-        if ($info['Error']['Code']) {
-            return new WP_Error($info['Error']['Code'], $info['Error']['Name']);
-        }
+        return $result;
+    }
 
-        if (! $info['IsFound']) {
-            return new WP_Error(404, 'Not Found');
-        }
-
-        $sku = $info['Product'] ?: '';
-        $description = $info['Description'] ?: '';
-        $manufacturer = $info['Manufacturer']['Name'] ?: '';
-        $globalCategory = $info['GlobalCategory']['Name'] ?: '';
-        $category = $info['Category']['Name'] ?: '';
-        $subcategory = $info['SubCategory']['Name'] ?: '';
+    private function productDTO(array $data): ProductDTO
+    {
+        $sku = $data['SKU'] ?: '';
+        $description = $data['Description'] ?: '';
+        $manufacturer = $data['Manufacturer']['Name'] ?: '';
+        $globalCategory = $data['GlobalCategory']['Name'] ?: '';
+        $category = $data['Category']['Name'] ?: '';
+        $subcategory = $data['SubCategory']['Name'] ?: '';
         $prices = [];
-        foreach ($info['Price'] as $name => $value) {
+        foreach ($data['Price'] as $name => $value) {
             $prices[$name] = $value ?: '';
         }
+        $image = $data['ImageMain'] ?: '';
 
         return new ProductDTO(
             $sku, 
@@ -124,7 +146,79 @@ class IcarAPIService
             $globalCategory, 
             $category, 
             $subcategory, 
-            $prices
+            $prices,
+            $image
         );
+    }
+
+    public function search(string $s): array
+    {
+        $body = '<?xml version="1.0" encoding="utf-8"?>';
+        $body .= '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">';
+        $body .= '<soap:Body>';
+        $body .= '<getQuickSearch xmlns="http://icarapi.com/">';
+        $body .= "<login>{$this->credentials['login']}</login>";
+        $body .= "<password>{$this->credentials['password']}</password>";
+        $body .= "<part>{$s}</part>";
+        $body .= '</getQuickSearch>';
+        $body .= '</soap:Body>';
+        $body .= '</soap:Envelope>';
+
+        $headers = [
+            'Authorization' => "Bearer {$this->credentials['secret']}",
+            'Content-Type' => 'text/xml',
+        ];
+
+        $response = $this->client->post('http://test.icarteam.com/IcarAPI/icarapi.asmx', [
+            'headers' => $headers,
+            'body' => $body,
+        ]);
+
+        $xmlContent = simplexml_load_string($response->getBody()->getContents());
+        $result = $xmlContent->children('soap', true)
+            ->Body->children('', true)
+            ->getQuickSearchResponse
+            ->getQuickSearchResult;
+        $result = json_decode(json_encode((array) $result), true);
+
+        $products = [];
+        foreach ($result['Items']['QuickSearchItem'] as $item) {
+            $products[] = new ProductDTO(
+                $item['Product'] ?: '',
+                '',
+                $item['Manufacturer'] ?: '',
+                '',
+                $item['Category'],
+                '',
+                [],
+                ''
+            );
+        }
+
+        return $products;
+    }
+
+    public static function create(): self
+    {
+        $handlers = HandlerStack::create();
+        $handlers->push(Middleware::retry(function($retries, $request, $response = null) {
+            if ($response and $response->getStatusCode() == 200) {
+                return false;
+            } else {
+                return $retries < 3;
+            }
+        }, function($retries) {
+            return $retries * 1000;
+        }));
+        $client = new Client([
+            'handler' => $handlers,
+        ]);
+
+        $settings = get_option('icar_api_settings');
+        $credentials['login'] = $settings['login'] ?? '';
+        $credentials['password'] = $settings['password'] ?? '';
+        $credentials['secret'] = $settings['secret'] ?? '';
+
+        return new self($client, $credentials);
     }
 }

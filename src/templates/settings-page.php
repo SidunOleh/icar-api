@@ -37,6 +37,22 @@
                 </td>
             </tr>
 
+            <tr>
+                <th scope="row">
+                    <label for="secret">
+                        <?php _e('ICAR API secret') ?>
+                    </label>
+                </th>
+                <td>
+                    <input 
+                        name="secret" 
+                        type="text" 
+                        id="secret" 
+                        value="<?php echo $settings['secret'] ?? '' ?>" 
+                        class="regular-text">
+                </td>
+            </tr>
+
         </tbody>
     </table>
 
@@ -67,6 +83,7 @@
         const data = new FormData()
         data.append('settings[login]', document.querySelector('#login').value)
         data.append('settings[password]', document.querySelector('#password').value)
+        data.append('settings[secret]', document.querySelector('#secret').value)
         fetch('/wp-admin/admin-ajax.php?action=icar_api_update_settings', {
             method: 'POST',
             body: data,

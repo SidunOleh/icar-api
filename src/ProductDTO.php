@@ -13,7 +13,8 @@ class ProductDTO
         private string $globalCategory,
         private string $category,
         private string $subcategory,
-        private array $prices
+        private array $prices,
+        private string $image,
     )
     {
         
@@ -52,5 +53,10 @@ class ProductDTO
     public function prices(): array 
     {
         return $this->prices;
+    }
+
+    public function image(): string 
+    {
+        return $this->image;
     }
 }

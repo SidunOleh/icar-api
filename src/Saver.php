@@ -2,38 +2,15 @@
 
 namespace IcarAPI;
 
+use Exception;
 use WC_Product;
-use Psr\Log\LoggerInterface;
 use WP_Error;
 
 defined('ABSPATH') or die;
 
 class Saver
 {
-    private LoggerInterface $logger;
-
-    public function __construct(LoggerInterface $logger)
-    {
-        $this->logger = $logger;
-    }
-
-    public function saveProducts(array $products): array
-    {
-        $productIds = [];
-        foreach ($products as $product) {
-            $productId = $this->saveProduct($product);
-            if ($productId instanceof WP_Error) {
-                $this->logger->error($productId->get_error_message());
-            } else {
-                $productIds[] = $productId;
-                $this->logger->info('Saved ' . $product->sku());
-            }
-        }
-
-        return $productIds;
-    }
-
-    public function saveProduct(ProductDTO $dto): int|WP_Error
+    public function saveProduct(ProductDTO $dto): int
     {
         $productId = wp_insert_post([
             'ID' => $this->id($dto->sku()),
@@ -46,7 +23,7 @@ class Saver
         ]);
 
         if (! $productId) {
-            return new WP_Error(1, 'Saving error ' . $dto->sku());
+            throw new Exception("Saving error \"{$dto->sku()}\"");
         }
 
         $tagIds = [];
@@ -67,6 +44,7 @@ class Saver
         $product->set_sku($dto->sku());
         $product->set_category_ids($catIds);
         $product->set_tag_ids($tagIds);
+        $product->update_meta_data('product_main_image', $dto->image());
         $product->save();
 
         return $productId;
