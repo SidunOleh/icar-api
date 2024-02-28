@@ -14,7 +14,7 @@ class ProductDTO
         private string $category,
         private string $subcategory,
         private array $prices,
-        private string $image,
+        private string $image
     )
     {
         
