@@ -202,7 +202,7 @@ class IcarAPIService
                 '',
                 $item['Manufacturer'] ?: '',
                 '',
-                $item['Category'],
+                $item['Category'] ?: '',
                 '',
                 [],
                 ''

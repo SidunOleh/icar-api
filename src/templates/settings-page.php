@@ -65,7 +65,7 @@
             value="<?php _e('Save Changes') ?>">
     </p>
 
-    <p class="next">
+    <p class="import">
         <a href="<?php echo admin_url('admin-ajax.php?action=force_products_import') ?>" class="link" id="force">
             <?php _e('Force products import') ?>
         </a>
