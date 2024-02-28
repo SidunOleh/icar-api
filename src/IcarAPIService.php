@@ -43,12 +43,17 @@ class IcarAPIService
 
             $iteratorId = $result['IteratorID'];
 
-            if ($pageSize == 1) {
-                yield $this->productDTO($result['Products']['ProductInfo']);
+            $products = [];
+            if ($result['Qty'] == 0) {
+                $products = [];
+            } elseif ($result['Qty'] == 1) {
+                $products[] = $result['Products']['ProductInfo'];
             } else {
-                foreach ($result['Products']['ProductInfo'] as $product) {
-                    yield $this->productDTO($product);
-                }
+                $products = $result['Products']['ProductInfo'];
+            }
+
+            foreach ($products as $product) {
+                yield $this->productDTO($product);
             }
 
             if ($result['QtyLeave'] == 0) {
@@ -181,8 +186,17 @@ class IcarAPIService
             ->getQuickSearchResult;
         $result = json_decode(json_encode((array) $result), true);
 
+        $items = [];
+        if ($result['Qty'] == 0) {
+            $items = [];
+        } elseif ($result['Qty'] == 1) {
+            $items[] = $result['Items']['QuickSearchItem'];
+        } else {
+            $items = $result['Items']['QuickSearchItem'];
+        }
+
         $products = [];
-        foreach ($result['Items']['QuickSearchItem'] as $item) {
+        foreach ($items as $item) {
             $products[] = new ProductDTO(
                 $item['Product'] ?: '',
                 '',
