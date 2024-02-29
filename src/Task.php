@@ -17,15 +17,17 @@ class Task
     public function __invoke()
     {
         set_time_limit(0);
+        wp_suspend_cache_addition(true);
 
         $icarApi = IcarAPIService::create();
         $saver = new Saver;
         $logger = new FileLogger(ICAR_API_ROOT . '/logs/imports/' . date('Y-m-d H:i:s') . '.log');
 
         try {
-            foreach ($icarApi->getProducts() as $product) {
+            foreach ($icarApi->getProducts(10) as $product) {
                 $saver->saveProduct($product);
                 $logger->info("Imported \"{$product->sku()}\"");
+                wp_cache_flush();
             }
         } catch (Exception $e) {
             $logger->error($e->getMessage());
