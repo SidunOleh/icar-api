@@ -16,7 +16,7 @@ class Task
 {
     public function __invoke()
     {
-        set_time_limit(0);
+        set_time_limit(DAY_IN_SECONDS);
 
         wp_suspend_cache_addition(true);
 
