@@ -3,9 +3,6 @@
 namespace IcarAPI;
 
 use Exception;
-use GuzzleHttp\Client;
-use GuzzleHttp\HandlerStack;
-use GuzzleHttp\Middleware;
 use IcarAPI\IcarAPIService;
 use IcarAPI\Saver;
 use Wa72\SimpleLogger\FileLogger;
