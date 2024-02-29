@@ -25,7 +25,7 @@ class IcarAPIService
         $this->credentials = $credentials;
     }
 
-    public function getProducts(int $pageSize = 1000): Generator 
+    public function getProducts(int $pageSize = 100): Generator 
     {        
         $pageSize = $pageSize < 1 ? 1 : $pageSize;
         $page = 1;

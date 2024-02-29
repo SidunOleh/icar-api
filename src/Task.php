@@ -17,6 +17,7 @@ class Task
     public function __invoke()
     {
         set_time_limit(0);
+
         wp_suspend_cache_addition(true);
 
         $icarApi = IcarAPIService::create();
@@ -24,7 +25,7 @@ class Task
         $logger = new FileLogger(ICAR_API_ROOT . '/logs/imports/' . date('Y-m-d H:i:s') . '.log');
 
         try {
-            foreach ($icarApi->getProducts(10) as $product) {
+            foreach ($icarApi->getProducts() as $product) {
                 $saver->saveProduct($product);
                 $logger->info("Imported \"{$product->sku()}\"");
                 wp_cache_flush();
