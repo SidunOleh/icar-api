@@ -107,10 +107,7 @@ add_action('import_products', fn() => (new Task)());
 function forceProductsImport() {
     ignore_user_abort(true);
     
-    ob_start();
     header('Connection: close');
-    ob_end_flush();
-    ob_flush();
     flush();
 
     (new Task)();
