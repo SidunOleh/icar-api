@@ -16,6 +16,12 @@ class ProductsGenerator
 
     private int $pageSize;
 
+    private int $page;
+
+    private string $iteratorId;
+
+    private bool $started;
+
     public function __construct(
         Client $client,
         array $credentials,
@@ -25,24 +31,31 @@ class ProductsGenerator
         $this->client = $client;
         $this->credentials = $credentials;
         $this->pageSize = $pageSize < 1 ? 1 : $pageSize;
+        $this->page = 1;
+        $this->iteratorId = '';
+        $this->started = false;
     }
 
-    public function run(): Generator
+    public function start(): Generator
     {
-        $page = 1;
-        $iteratorId = '';
+        if ($this->started) {
+            throw new Exception('Can\'t start generator twice.');
+        } else {
+            $this->started = true;
+        }
+
         while (true) {
-            if ($page == 1) {
+            if ($this->page == 1) {
                 $result = $this->fullListInit();
             } else {
-                $result = $this->fullListNextPage($iteratorId);
+                $result = $this->fullListNextPage();
             }
 
             if ($result['Error']['Code']) {
                 throw new Exception($result['Error']['Name']);
             }
 
-            $iteratorId = $result['IteratorID'];
+            $this->iteratorId = $result['IteratorID'];
 
             $products = [];
             if ($result['Qty'] == 0) {
@@ -54,14 +67,14 @@ class ProductsGenerator
             }
 
             foreach ($products as $product) {
-                yield $this->productDTO($product);
+                yield $this->product($product);
             }
 
             if ($result['QtyLeave'] == 0) {
                 break;
             }
 
-            $page++;
+            $this->page++;
         }
     }
 
@@ -98,7 +111,7 @@ class ProductsGenerator
         return $result;
     }
 
-    private function fullListNextPage(string $iteratorId): array
+    private function fullListNextPage(): array
     {
         $body = '<?xml version="1.0" encoding="utf-8"?>';
         $body .= '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">';
@@ -106,7 +119,7 @@ class ProductsGenerator
         $body .= '<FullListNextPage xmlns="http://icarapi.com/">';
         $body .= "<login>{$this->credentials['login']}</login>";
         $body .= "<password>{$this->credentials['password']}</password>";
-        $body .= "<iteratorID>{$iteratorId}</iteratorID>";
+        $body .= "<iteratorID>{$this->iteratorId}</iteratorID>";
         $body .= '</FullListNextPage>';
         $body .= '</soap:Body>';
         $body .= '</soap:Envelope>';
@@ -131,7 +144,7 @@ class ProductsGenerator
         return $result;
     }
 
-    private function productDTO(array $data): ProductDTO
+    private function product(array $data): Product
     {
         $sku = $data['SKU'] ?: '';
         $description = $data['Description'] ?: '';
@@ -145,7 +158,7 @@ class ProductsGenerator
         }
         $image = $data['ImageMain'] ?: '';
 
-        return new ProductDTO(
+        return new Product(
             $sku, 
             $description, 
             $manufacturer, 

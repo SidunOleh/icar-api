@@ -4,7 +4,7 @@ namespace IcarAPI;
 
 defined('ABSPATH') or die;
 
-class ProductDTO
+class Product
 {
     public function __construct(
         private string $sku,

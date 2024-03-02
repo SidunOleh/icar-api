@@ -10,42 +10,42 @@ defined('ABSPATH') or die;
 
 class Saver
 {
-    public function saveProduct(ProductDTO $dto): int
+    public function saveProduct(Product $product): int
     {
         $productId = wp_insert_post([
-            'ID' => $this->id($dto->sku()),
-            'post_title' => $this->title($dto),
-            'post_content' => $dto->description(),
-            'post_excerpt' => json_encode($dto->prices()),
+            'ID' => $this->id($product->sku()),
+            'post_title' => $this->title($product),
+            'post_content' => $product->description(),
+            'post_excerpt' => json_encode($product->prices()),
             'post_type' => 'product',
             'post_status' => 'publish',
             'post_author' => get_current_user_id(),
         ]);
 
         if (! $productId) {
-            throw new Exception("Saving error \"{$dto->sku()}\"");
+            throw new Exception("Saving error \"{$product->sku()}\"");
         }
 
         $tagIds = [];
         if (
-            $dto->manufacturer() and 
-            $tagId = $this->insertTag($dto->manufacturer())
+            $product->manufacturer() and 
+            $tagId = $this->upsertTag($product->manufacturer())
         ) {
             $tagIds[] = $tagId;
         }   
 
-        $catIds = $this->insertCategories(
-            $dto->globalCategory(),
-            $dto->category(),
-            $dto->subcategory()
+        $catIds = $this->upsertCategories(
+            $product->globalCategory(),
+            $product->category(),
+            $product->subcategory()
         );
 
-        $product = new WC_Product($productId);
-        $product->set_sku($dto->sku());
-        $product->set_category_ids($catIds);
-        $product->set_tag_ids($tagIds);
-        $product->update_meta_data('product_main_image', $dto->image());
-        $product->save();
+        $WCProduct = new WC_Product($productId);
+        $WCProduct->set_sku($product->sku());
+        $WCProduct->set_category_ids($catIds);
+        $WCProduct->set_tag_ids($tagIds);
+        $WCProduct->update_meta_data('product_main_image', $product->image());
+        $WCProduct->save();
 
         return $productId;
     }
@@ -55,16 +55,16 @@ class Saver
         return wc_get_product_id_by_sku($sku);
     }
 
-    private function title(ProductDTO $dto): string
+    private function title(Product $product): string
     {
-        $title[] = $dto->manufacturer();
-        $title[] = $dto->sku();
-        $title[] = $dto->subcategory() ?: $dto->category() ?: $dto->globalCategory();
+        $title[] = $product->manufacturer();
+        $title[] = $product->sku();
+        $title[] = $product->subcategory() ?: $product->category() ?: $product->globalCategory();
         
         return implode(' ', $title);
     }
 
-    private function insertTag(string $name): int|false
+    private function upsertTag(string $name): int|false
     {
         global $wpdb;
 
@@ -89,7 +89,7 @@ class Saver
         return $tag['term_id'];
     }
 
-    private function insertCategories(
+    private function upsertCategories(
         string $globalCategory, 
         string $category, 
         string $subcategory
@@ -98,21 +98,21 @@ class Saver
         $catIds = [];
 
         if ($globalCategory) {
-            $catIds['global_category'] = $this->insertCategory($globalCategory);
+            $catIds['global_category'] = $this->upsertCategory($globalCategory);
         }
 
         if ($category and $catIds['global_category']) {
-            $catIds['category'] = $this->insertCategory($category, $catIds['global_category']);
+            $catIds['category'] = $this->upsertCategory($category, $catIds['global_category']);
         }
         
         if ($subcategory and $catIds['category']) {
-            $catIds['subcategory'] = $this->insertCategory($subcategory, $catIds['category']);
+            $catIds['subcategory'] = $this->upsertCategory($subcategory, $catIds['category']);
         }
 
         return array_filter($catIds, fn($catId) => $catId);
     }
 
-    private function insertCategory(string $name, int $parentId = 0): int|false
+    private function upsertCategory(string $name, int $parentId = 0): int|false
     {
         global $wpdb;
 

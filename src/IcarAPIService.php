@@ -24,14 +24,14 @@ class IcarAPIService
         $this->credentials = $credentials;
     }
 
-    public function getProductsGenerator(int $pageSize = 100): Generator 
+    public function getProducts(int $pageSize = 100): Generator 
     {      
         $generator = new ProductsGenerator($this->client, $this->credentials, $pageSize);
 
-        return $generator->run();
+        return $generator->start();
     }
 
-    public function search(string $s): array
+    public function searchProducts(string $s): array
     {
         $body = '<?xml version="1.0" encoding="utf-8"?>';
         $body .= '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">';
@@ -72,7 +72,7 @@ class IcarAPIService
 
         $products = [];
         foreach ($items as $item) {
-            $products[] = new ProductDTO(
+            $products[] = new Product(
                 $item['Product'] ?: '',
                 '',
                 $item['Manufacturer'] ?: '',
