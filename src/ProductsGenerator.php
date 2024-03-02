@@ -14,23 +14,26 @@ class ProductsGenerator
 
     private array $credentials;
 
+    private int $pageSize;
+
     public function __construct(
         Client $client,
         array $credentials,
+        int $pageSize = 100
     )
     {
         $this->client = $client;
         $this->credentials = $credentials;
+        $this->pageSize = $pageSize < 1 ? 1 : $pageSize;
     }
 
-    public function __invoke(int $pageSize = 100): Generator
+    public function run(): Generator
     {
-        $pageSize = $pageSize < 1 ? 1 : $pageSize;
         $page = 1;
         $iteratorId = '';
         while (true) {
             if ($page == 1) {
-                $result = $this->fullListInit($pageSize);
+                $result = $this->fullListInit();
             } else {
                 $result = $this->fullListNextPage($iteratorId);
             }
@@ -62,7 +65,7 @@ class ProductsGenerator
         }
     }
 
-    private function fullListInit(int $pageSize): array
+    private function fullListInit(): array
     {
         $body = '<?xml version="1.0" encoding="utf-8"?>';
         $body .= '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">';
@@ -70,7 +73,7 @@ class ProductsGenerator
         $body .= '<FullListInit xmlns="http://icarapi.com/">';
         $body .= "<login>{$this->credentials['login']}</login>";
         $body .= "<password>{$this->credentials['password']}</password>";
-        $body .= "<productsOnPage>{$pageSize}</productsOnPage>";
+        $body .= "<productsOnPage>{$this->pageSize}</productsOnPage>";
         $body .= '</FullListInit>';
         $body .= '</soap:Body>';
         $body .= '</soap:Envelope>';

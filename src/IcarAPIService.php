@@ -26,7 +26,9 @@ class IcarAPIService
 
     public function getProductsGenerator(int $pageSize = 100): Generator 
     {      
-        return (new ProductsGenerator($this->client, $this->credentials))($pageSize);
+        $generator = new ProductsGenerator($this->client, $this->credentials, $pageSize);
+
+        return $generator->run();
     }
 
     public function search(string $s): array
