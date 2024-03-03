@@ -10,7 +10,7 @@ use Wa72\SimpleLogger\FileLogger;
 defined('ABSPATH') or die;
 
 class Task
-{
+{       
     public function __invoke()
     {
         set_time_limit(DAY_IN_SECONDS);

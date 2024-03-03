@@ -25,7 +25,7 @@ class ProductsGenerator
     public function __construct(
         Client $client,
         array $credentials,
-        int $pageSize = 100
+        int $pageSize = 1000
     )
     {
         $this->client = $client;
