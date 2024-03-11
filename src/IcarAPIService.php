@@ -12,7 +12,6 @@ use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
 use Wa72\SimpleLogger\FileLogger;
 use WC_Product;
-use WP_Error;
 
 defined('ABSPATH') or die;
 
