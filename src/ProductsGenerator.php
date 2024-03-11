@@ -55,6 +55,10 @@ class ProductsGenerator
                 throw new Exception($result['Error']['Name']);
             }
 
+            if (! $result['IteratorID']) {
+                throw new Exception('No iterator was returned.');
+            }
+
             $this->iteratorId = $result['IteratorID'];
 
             $products = [];
