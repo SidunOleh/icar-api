@@ -22,7 +22,7 @@ class Task
         $logger = new FileLogger(ICAR_API_ROOT . '/logs/imports/' . date('Y-m-d H:i:s') . '.log');
 
         try {
-            foreach ($icarApi->getProducts() as $product) {
+            foreach ($icarApi->iterateProducts() as $product) {
                 $saver->saveProduct($product);
                 $logger->info("Imported \"{$product->sku()}\"");
                 wp_cache_flush();
