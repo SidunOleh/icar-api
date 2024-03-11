@@ -6,7 +6,8 @@
  * Author: Sidun Oleh
  */
 
-use IcarAPI\Task;
+use IcarAPI\ImportProductsTask;;
+use IcarAPI\UpdateProductsTask;
 
 defined('ABSPATH') or die;
 
@@ -24,11 +25,11 @@ require_once ICAR_API_ROOT . '/vendor/autoload.php';
  * Plugin activation
  */
 function icarApiActivation() {
-    if (! wp_next_scheduled('import_products')) {
+    if (! wp_next_scheduled('products_update')) {
         wp_schedule_event(
             strtotime('tomorrow midnight'), 
             'daily', 
-            'import_products'
+            'products_update'
         );
     }
 
@@ -47,10 +48,10 @@ register_activation_hook(__FILE__, 'icarApiActivation');
  * Plugin deactivation
  */
 function icarApiDeactivation() {
-    if ($timestamp = wp_next_scheduled('import_products')) {
+    if ($timestamp = wp_next_scheduled('products_update')) {
         wp_unschedule_event(
             $timestamp, 
-            'import_products'
+            'products_update'
         );
     }
 
@@ -99,36 +100,59 @@ add_action('wp_ajax_icar_api_update_settings', 'updateSettings');
 /**
  * Import products
  */
-add_action('import_products', fn() => (new Task)());
+function importProducts() {    
+    try {
+        $filepath = $_FILES['xlsx']['tmp_name'] ?? '';
+
+        if (! $filepath) {
+            throw new Exception('No file was passed.');
+        }
+
+        (new ImportProductsTask)($filepath);
+
+        wp_send_json_success();
+    } catch (Exception $e) {
+        wp_send_json_error(['msg' => $e->getMessage(),]);
+    }
+
+    wp_die();
+}
+
+add_action('wp_ajax_import_products', 'importProducts');
 
 /**
- * Force products import
+ * Update products
  */
-function forceProductsImport() {
+add_action('products_update', fn() => (new UpdateProductsTask)());
+
+/**
+ * Force products update
+ */
+function forceProductsUpdate() {
     ignore_user_abort(true);
     
     header('Connection: close');
     flush();
 
-    (new Task)();
+    (new UpdateProductsTask)();
     
     wp_die();
 }
 
-add_action('wp_ajax_force_products_import', 'forceProductsImport');
+add_action('wp_ajax_force_products_update', 'forceProductsUpdate');
 
 /**
  * Delete logs
  */
 function deleteLogs() {
-    $files = scandir(ICAR_API_ROOT . '/logs/imports');
-    $files = array_filter($files, function ($file) {
-        return ! in_array($file, ['.', '..', '.htaccess',]);
+    $dir = ICAR_API_ROOT . '/logs/updates/';
+    $files = array_filter(scandir($dir), function ($file) {
+        return ! in_array($file, ['.', '..',]);
     });
     foreach ($files as $file) {
         $time = strtotime(basename($file, '.log'));
         if (time() - $time >= MONTH_IN_SECONDS) {
-            unlink(ICAR_API_ROOT . '/logs/imports/' . $file);
+            unlink($dir . $file);
         }
     }
 }

@@ -1,7 +1,8 @@
 {
     "require": {
         "guzzlehttp/guzzle": "^7.8",
-        "wa72/simplelogger": "^1.1"
+        "wa72/simplelogger": "^1.1",
+        "shuchkin/simplexlsx": "^1.0"
     },
     "autoload": {
         "psr-4": {
