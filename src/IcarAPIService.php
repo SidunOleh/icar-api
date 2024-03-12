@@ -104,7 +104,7 @@ class IcarAPIService
     public function updateProducts(): void
     {
         $pool = new Pool($this->client, $this->getProductInfoRequests(), [
-            'concurrency' => 1000,
+            'concurrency' => 100,
             'fulfilled' => function ($response, $productId) {
                 $this->getProductInfoFulfilled($response, $productId);
             },
