@@ -136,7 +136,7 @@
                 throw new Error()
             }
         }).catch(err => alert(err))
-        .finally(() => settingsSection.classList.remove('loading'))
+            .finally(() => settingsSection.classList.remove('loading'))
     })
 
     const importSection = document.querySelector('#import')
@@ -164,7 +164,7 @@
                 throw new Error(data.data.msg)
             }
         }).catch(err => alert(err))
-        .finally(() => importSection.classList.remove('loading'))
+            .finally(() => importSection.classList.remove('loading'))
     })
 
     const forceSection = document.querySelector('#force')
@@ -182,8 +182,19 @@
         fetch('/wp-admin/admin-ajax.php', {
             method: 'POST',
             body: data,
-        }).then(res => alert('Update is running.'))
-            .catch(err => alert(err))
+        }).then(async res => {
+            if (! res.ok) {
+                throw new Error(res.statusText)
+            }
+
+            const data = await res.json()
+            
+            if (data.success) {
+                alert('Successfully updated.')
+            } else {
+                throw new Error(data.data.msg)
+            }
+        }).catch(err => alert(err))
             .finally(() => forceSection.classList.remove('loading'))
     })
 </script>

@@ -129,13 +129,14 @@ add_action('products_update', fn() => (new UpdateProductsTask)());
  * Force products update
  */
 function forceProductsUpdate() {
-    ignore_user_abort(true);
-    
-    header('Connection: close');
-    flush();
+    try {
+        (new UpdateProductsTask)();
 
-    (new UpdateProductsTask)();
-    
+        wp_send_json_success();
+    } catch (Exception $e) {
+        wp_send_json_error(['msg' => $e->getMessage(),]);
+    }
+
     wp_die();
 }
 
