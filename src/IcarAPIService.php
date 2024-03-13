@@ -51,7 +51,6 @@ class IcarAPIService
             'Authorization' => "Bearer {$this->credentials['secret']}",
             'Content-Type' => 'text/xml',
         ];
-
         $body = $this->searchProductsBody($s);
 
         $response = $this->client->post('http://test.icarteam.com/IcarAPI/icarapi.asmx', [
