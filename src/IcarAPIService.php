@@ -58,30 +58,9 @@ class IcarAPIService
             'body' => $body,
         ]);
 
-        $result = $this->parseSearchProductsResponse($response->getBody()->getContents());
-
-        $items = [];
-        if ($result['Qty'] == 0) {
-            $items = [];
-        } elseif ($result['Qty'] == 1) {
-            $items[] = $result['Items']['QuickSearchItem'];
-        } else {
-            $items = $result['Items']['QuickSearchItem'];
-        }
-
-        $products = [];
-        foreach ($items as $item) {
-            $products[] = new Product(
-                $item['Product'] ?: '',
-                '',
-                $item['Manufacturer'] ?: '',
-                '',
-                $item['Category'] ?: '',
-                '',
-                [],
-                ''
-            );
-        }
+        $products = $this->parseSearchProductsResponse(
+            $response->getBody()->getContents()
+        );
 
         return $products;
     }
@@ -112,7 +91,30 @@ class IcarAPIService
             ->getQuickSearchResult;
         $result = json_decode(json_encode((array) $result), true);
 
-        return $result;
+        $items = [];
+        if ($result['Qty'] == 0) {
+            $items = [];
+        } elseif ($result['Qty'] == 1) {
+            $items[] = $result['Items']['QuickSearchItem'];
+        } else {
+            $items = $result['Items']['QuickSearchItem'];
+        }
+
+        $products = [];
+        foreach ($items as $item) {
+            $products[] = new Product(
+                $item['Product'] ?: '',
+                '',
+                $item['Manufacturer'] ?: '',
+                '',
+                $item['Category'] ?: '',
+                '',
+                [],
+                ''
+            );
+        }
+
+        return $products;
     }
 
     public function updateProducts(): void
@@ -144,16 +146,7 @@ class IcarAPIService
         foreach ($productIds as $productId) {
             $sku = (new WC_Product($productId))->get_sku();
 
-            $body = '<?xml version="1.0" encoding="utf-8"?>';
-            $body .= '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">';
-            $body .= '<soap:Body>';
-            $body .= '<getProductInfo xmlns="http://icarapi.com/" >';
-            $body .= "<login>{$this->credentials['login']}</login>";
-            $body .= "<password>{$this->credentials['password']}</password>";
-            $body .= "<product>{$sku}</product>";
-            $body .= '</getProductInfo>';
-            $body .= '</soap:Body>';
-            $body .= '</soap:Envelope>';
+            $body = $this->getProductInfoBody($sku);
 
             yield $productId => new Request(
                 'POST', 
@@ -162,6 +155,22 @@ class IcarAPIService
                 $body
             );
         }
+    }
+
+    private function getProductInfoBody(string $sku): string
+    {
+        $body = '<?xml version="1.0" encoding="utf-8"?>';
+        $body .= '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">';
+        $body .= '<soap:Body>';
+        $body .= '<getProductInfo xmlns="http://icarapi.com/" >';
+        $body .= "<login>{$this->credentials['login']}</login>";
+        $body .= "<password>{$this->credentials['password']}</password>";
+        $body .= "<product>{$sku}</product>";
+        $body .= '</getProductInfo>';
+        $body .= '</soap:Body>';
+        $body .= '</soap:Envelope>';
+
+        return $body;
     }
 
     private function getProductInfoFulfilled(Response $response, int $productId): void
