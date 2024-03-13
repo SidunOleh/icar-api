@@ -47,33 +47,19 @@ class IcarAPIService
 
     public function searchProducts(string $s): array
     {
-        $body = '<?xml version="1.0" encoding="utf-8"?>';
-        $body .= '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">';
-        $body .= '<soap:Body>';
-        $body .= '<getQuickSearch xmlns="http://icarapi.com/">';
-        $body .= "<login>{$this->credentials['login']}</login>";
-        $body .= "<password>{$this->credentials['password']}</password>";
-        $body .= "<part>{$s}</part>";
-        $body .= '</getQuickSearch>';
-        $body .= '</soap:Body>';
-        $body .= '</soap:Envelope>';
-
         $headers = [
             'Authorization' => "Bearer {$this->credentials['secret']}",
             'Content-Type' => 'text/xml',
         ];
+
+        $body = $this->searchProductsBody($s);
 
         $response = $this->client->post('http://test.icarteam.com/IcarAPI/icarapi.asmx', [
             'headers' => $headers,
             'body' => $body,
         ]);
 
-        $xmlContent = simplexml_load_string($response->getBody()->getContents());
-        $result = $xmlContent->children('soap', true)
-            ->Body->children('', true)
-            ->getQuickSearchResponse
-            ->getQuickSearchResult;
-        $result = json_decode(json_encode((array) $result), true);
+        $result = $this->parseSearchProductsResponse($response->getBody()->getContents());
 
         $items = [];
         if ($result['Qty'] == 0) {
@@ -99,6 +85,35 @@ class IcarAPIService
         }
 
         return $products;
+    }
+
+    private function searchProductsBody(string $s): string
+    {
+        $body = '<?xml version="1.0" encoding="utf-8"?>';
+        $body .= '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">';
+        $body .= '<soap:Body>';
+        $body .= '<getQuickSearch xmlns="http://icarapi.com/">';
+        $body .= "<login>{$this->credentials['login']}</login>";
+        $body .= "<password>{$this->credentials['password']}</password>";
+        $body .= "<part>{$s}</part>";
+        $body .= '</getQuickSearch>';
+        $body .= '</soap:Body>';
+        $body .= '</soap:Envelope>';
+
+        return $body;
+    }
+
+    private function parseSearchProductsResponse(string $xml): array
+    {
+
+        $xml = simplexml_load_string($xml);
+        $result = $xml->children('soap', true)
+            ->Body->children('', true)
+            ->getQuickSearchResponse
+            ->getQuickSearchResult;
+        $result = json_decode(json_encode((array) $result), true);
+
+        return $result;
     }
 
     public function updateProducts(): void
