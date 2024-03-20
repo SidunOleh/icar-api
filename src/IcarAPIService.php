@@ -83,7 +83,6 @@ class IcarAPIService
 
     private function parseSearchProductsResponse(string $xml): array
     {
-
         $xml = simplexml_load_string($xml);
         $result = $xml->children('soap', true)
             ->Body->children('', true)
