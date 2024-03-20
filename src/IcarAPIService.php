@@ -176,7 +176,9 @@ class IcarAPIService
     private function getProductInfoFulfilled(Response $response, string $sku): void
     {
         try {
-            $product = $this->parseGetProductInfoResponse($response->getBody()->getContents());
+            $product = $this->parseGetProductInfoResponse(
+                $response->getBody()->getContents()
+            );
             $this->saver->saveProduct($product);
             $this->logger->info("Updated {$product->sku()}");
         } catch (Exception $e) {
