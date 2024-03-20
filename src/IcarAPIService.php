@@ -199,15 +199,15 @@ class IcarAPIService
         $result = json_decode(json_encode((array) $result), true);
 
         if (! $result) {
-            return new Exception('Can\'t parse getProductInfo response');
+            throw new Exception('Can\'t parse getProductInfo response');
         }
 
         if ($result['Error']['Code'] != 0) {
-            return new Exception($result['Error']['Name'], $result['Error']['Code']);
+            throw new Exception($result['Error']['Name'], $result['Error']['Code']);
         }
 
         if (! $result['Product']['IsFound']) {
-            return new Exception('Product not found');
+            throw new Exception('Product not found');
         }
 
         $data = $result['Product'];
