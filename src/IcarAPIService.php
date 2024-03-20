@@ -121,11 +121,11 @@ class IcarAPIService
     {
         $pool = new Pool($this->client, $this->getProductInfoRequests(), [
             'concurrency' => 100,
-            'fulfilled' => function ($response, $productId) {
-                $this->getProductInfoFulfilled($response, $productId);
+            'fulfilled' => function ($response, $sku) {
+                $this->getProductInfoFulfilled($response, $sku);
             },
-            'rejected' => function ($e, $productId) {
-                $this->getProductInfoRejected($e, $productId);
+            'rejected' => function ($e, $sku) {
+                $this->getProductInfoRejected($e, $sku);
             },
         ]); 
 
@@ -148,7 +148,7 @@ class IcarAPIService
 
             $body = $this->getProductInfoBody($sku);
 
-            yield $productId => new Request(
+            yield $sku => new Request(
                 'POST', 
                 'http://test.icarteam.com/IcarAPI/icarapi.asmx', 
                 $headers, 
@@ -173,20 +173,20 @@ class IcarAPIService
         return $body;
     }
 
-    private function getProductInfoFulfilled(Response $response, int $productId): void
+    private function getProductInfoFulfilled(Response $response, string $sku): void
     {
         try {
             $product = $this->parseGetProductInfoResponse($response->getBody()->getContents());
             $this->saver->saveProduct($product);
             $this->logger->info("Updated {$product->sku()}");
         } catch (Exception $e) {
-            $this->logger->error($e->getMessage());
+            $this->logger->error($e->getMessage() . " {$sku}");
         }
     }
 
-    private function getProductInfoRejected(Exception $e, int $productId): void
+    private function getProductInfoRejected(Exception $e, string $sku): void
     {
-        $this->logger->error($e->getMessage());
+        $this->logger->error($e->getMessage() . " {$sku}");
     }
 
     private function parseGetProductInfoResponse(string $xml): Product
@@ -199,11 +199,15 @@ class IcarAPIService
         $result = json_decode(json_encode((array) $result), true);
 
         if (! $result) {
-            return new Exception('Can\'t parse getProductInfo response.');
+            return new Exception('Can\'t parse getProductInfo response');
         }
 
         if ($result['Error']['Code'] != 0) {
             return new Exception($result['Error']['Name'], $result['Error']['Code']);
+        }
+
+        if (! $result['Product']['IsFound']) {
+            return new Exception('Product not found');
         }
 
         $data = $result['Product'];

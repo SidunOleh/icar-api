@@ -68,11 +68,13 @@ class Saver
     {
         global $wpdb;
 
+        $name = htmlspecialchars($wpdb->_real_escape($name));
+
         $tagId = $wpdb->get_var("SELECT `terms`.`term_id`
             FROM `{$wpdb->prefix}terms` AS `terms`
             INNER JOIN `{$wpdb->prefix}term_taxonomy` AS `taxs`
             ON `terms`.`term_id` = `taxs`.`term_id`
-            WHERE `terms`.`name` = '" . $wpdb->_real_escape($name) . "'
+            WHERE `terms`.`name` = '" . $name . "'
             AND `taxs`.`taxonomy` = 'product_tag'
         ");
 
@@ -116,13 +118,13 @@ class Saver
     {
         global $wpdb;
 
-        $name = $wpdb->_real_escape($name);
+        $name = htmlspecialchars($wpdb->_real_escape($name));
 
         $catId = $wpdb->get_var("SELECT `terms`.`term_id`
             FROM `{$wpdb->prefix}terms` AS `terms`
             INNER JOIN `{$wpdb->prefix}term_taxonomy` AS `taxs`
             ON `terms`.`term_id` = `taxs`.`term_id`
-            WHERE `terms`.`name` = '" . $wpdb->_real_escape($name) . "'
+            WHERE `terms`.`name` = '" . $name . "'
             AND `taxs`.`taxonomy` = 'product_cat'
             AND `taxs`.`parent` = {$parentId}
         ");
