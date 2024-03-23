@@ -25,6 +25,8 @@ class IcarAPIService
 
     private Saver $saver;
 
+    private string $url;
+
     public function __construct(
         Client $client,
         array $credentials,
@@ -36,6 +38,7 @@ class IcarAPIService
         $this->credentials = $credentials;
         $this->logger = $logger;
         $this->saver = $saver;
+        $this->url = 'http://test.icarteam.com/IcarAPI/icarapi.asmx';
     }
 
     public function iterateProducts(int $pageSize = 1000): Generator 
@@ -47,13 +50,10 @@ class IcarAPIService
 
     public function searchProducts(string $s): array
     {
-        $headers = [
-            'Authorization' => "Bearer {$this->credentials['secret']}",
-            'Content-Type' => 'text/xml',
-        ];
+        $headers = $this->headers();
         $body = $this->searchProductsBody($s);
 
-        $response = $this->client->post('http://test.icarteam.com/IcarAPI/icarapi.asmx', [
+        $response = $this->client->post($this->url, [
             'headers' => $headers,
             'body' => $body,
         ]);
@@ -138,10 +138,6 @@ class IcarAPIService
             'numberposts' => -1,
             'fields' => 'ids',
         ]);
-        $headers = [
-            'Authorization' => "Bearer {$this->credentials['secret']}",
-            'Content-Type' => 'text/xml',
-        ];
         foreach ($productIds as $productId) {
             $sku = (new WC_Product($productId))->get_sku();
 
@@ -149,8 +145,8 @@ class IcarAPIService
 
             yield $sku => new Request(
                 'POST', 
-                'http://test.icarteam.com/IcarAPI/icarapi.asmx', 
-                $headers, 
+                $this->url, 
+                $this->headers(), 
                 $body
             );
         }
@@ -235,6 +231,69 @@ class IcarAPIService
             $prices,
             $image
         );
+    }
+
+    public function createInquery(array $data): bool
+    {
+        $headers = $this->headers();
+        $body = $this->createInqueryBody($data);
+
+        try {
+            $this->client->post($this->url, [
+                'headers' => $headers,
+                'body' => $body,
+            ]);
+
+            return true;
+        } catch (Exception $e) {
+            $this->logger->error($e->getMessage());
+            
+            return false;
+        }
+    }
+
+    private function createInqueryBody(array $data): string
+    {
+        $body = '<?xml version="1.0" encoding="utf-8"?>';
+        $body .= '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">';
+        $body .= '<soap:Body>';
+        $body .= '<CreateInquery xmlns="http://icarapi.com/" >';
+        $body .= "<login>{$this->credentials['login']}</login>";
+        $body .= "<password>{$this->credentials['password']}</password>";
+        $body .= '<inq>';
+        $body .= '<FromWebsite>' . get_site_url() . '</FromWebsite>';
+        $body .= '<Company>' . ($data['company'] ?? '') . '</Company>';
+        $body .= '<Country>' . ($data['country'] ?? '') . '</Country>';
+        $body .= '<State>' . ($data['state'] ?? '') . '</State>';
+        $body .= '<City>' . ($data['city'] ?? '') . '</City>';
+        $body .= '<Code>' . ($data['zip'] ?? '') . '</Code>';
+        $body .= '<Contact>' . ($data['name'] ?? '') . '</Contact>';
+        $body .= '<Email>' . ($data['name'] ?? '') . '</Email>';
+        $body .= '<Phone>' . ($data['phone'] ?? '') . '</Phone>';
+        $body .= '<AboutUs>0</AboutUs>';
+        $body .= '<SKU>' . ($data['product'] ?? '') . '</SKU>';
+        $body .= '<Message>' . ($data['message'] ?? ''). '</Message>';
+        $body .= '<Service>';
+        $body .= '<New>' . (int) in_array('New', $data['service'] ?? []) . '</New>';
+        $body .= '<Refurbished>' . (int) in_array('Refurbished', $data['service'] ?? []) . '</Refurbished>';
+        $body .= '<Repair>' . (int) in_array('Repair', $data['service'] ?? []) . '</Repair>';
+        $body .= '<Exchange>' . (int) in_array('Exchange', $data['service'] ?? []) . '</Exchange>';
+        $body .= '<RFE>' . (int) in_array('RFE', $data['service'] ?? []) . '</RFE>';
+        $body .= '</Service>';
+        $body .= '</inq>';
+        $body .= '</CreateInquery>';
+        $body .= '</soap:Body>';
+        $body .= '</soap:Envelope>';
+
+        return $body;
+    }
+
+    private function headers(): array
+    {
+        return [
+            'Authorization' => "Bearer {$this->credentials['secret']}",
+            'Content-Type' => 'text/xml',
+        ];
     }
 
     public static function create(string $logpath = ''): self
